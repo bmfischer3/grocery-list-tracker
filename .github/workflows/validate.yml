@@ -22,5 +22,6 @@ jobs:
           cfn-lint cloudformations/*.yaml
 
       - name: Echo branch name
-        run: echo ${{ env.GITHUB_REF_NAME }}
+        run: |
+          echo "Branch Name: ${{ env.GITHUB_REF_NAME }} or ${GITHUB_REF#refs/heads/}"
         
