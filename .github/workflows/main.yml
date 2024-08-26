@@ -31,7 +31,6 @@ jobs:
           aws sts get-caller-identity
 
   deploy:
-
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Repository
@@ -84,7 +83,7 @@ jobs:
 
         aws cloudformation deploy \
             --template-file cloudformations/01_api_generated.yaml \
-            --stack-name listtracker-api-${{ env.GITHUB_REF_NAME }} \
+            --stack-name listtracker-api-${{ github.head_ref }} \
             --capabilities CAPABILITY_IAM \
             --capabilities CAPABILITY_NAMED_IAM
 
