@@ -14,6 +14,32 @@ permissions:
 
 
 jobs:
+  create-stack-name:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Get Branch Name
+        id: get_branch
+        run: echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
+
+      - name: Sanitize Branch Name
+        id: sanitize_branch
+        run: |
+          # Convert branch name to a valid format by removing or replacing invalid characters
+          SANITIZED_BRANCH_NAME=$(echo "${BRANCH_NAME}" | tr '/.' '-' | tr -cd '[:alnum:]-')
+          echo "SANITIZED_BRANCH_NAME=${SANITIZED_BRANCH_NAME}" >> $GITHUB_ENV
+          echo "Sanitized Branch Name: ${SANITIZED_BRANCH_NAME}"
+
+      - name: Use Sanitized Branch Name
+        run: |
+          echo "The sanitized branch name is: ${{ env.SANITIZED_BRANCH_NAME }}"
+          # Example: Using the sanitized branch name in a command
+          aws cloudformation describe-stacks --stack-name listtracker-api-${{ env.SANITIZED_BRANCH_NAME }}
+
+
   AssumeRoleAndCallIdentity:
     runs-on: ubuntu-latest
     steps:
@@ -83,7 +109,7 @@ jobs:
 
         aws cloudformation deploy \
             --template-file cloudformations/01_api_generated.yaml \
-            --stack-name listtracker-api-${{ github.head_ref }} \
+            --stack-name listtracker-api-${{ env.SANITIZED_BRANCH_NAME }} \
             --capabilities CAPABILITY_IAM \
             --capabilities CAPABILITY_NAMED_IAM
 
