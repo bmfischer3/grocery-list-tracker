@@ -84,7 +84,7 @@ jobs:
 
         aws cloudformation deploy \
             --template-file cloudformations/01_api_generated.yaml \
-            --stack-name listtracker-api-${{ GITHUB_REF_NAME }} \
+            --stack-name listtracker-api-${{ env.GITHUB_REF_NAME }} \
             --capabilities CAPABILITY_IAM \
             --capabilities CAPABILITY_NAMED_IAM
 
