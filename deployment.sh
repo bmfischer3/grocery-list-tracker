@@ -36,7 +36,6 @@ aws cloudformation package \
     --output-template-file cloudformations/01_api_generated.yaml \
 
 
-# TODO: Upload to bucket. 
 
 aws cloudformation deploy \
     --template-file cloudformations/01_api_generated.yaml \

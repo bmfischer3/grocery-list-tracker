@@ -1,29 +1,39 @@
 # Cloudformation that runs once. Base is needed for AWS env. 
 
 AWSTemplateFormatVersion: 2010-09-09
-Description: ---
+Description: '---'
 # Metadata: 
 
-# Parameters: 
 
+Parameters:
+  Email:
+    Type: String
+    Default: {{resolve:ssm:bf-cell-number}}
+    Description: Your email address to receive alarms per email
+    NoEcho: true
+  Phone:
+    Type: String
+    Default: {{resolve:ssm:bf-cell-number}}
+    Description: Your mobile phone number to receive SMS
+    NoEcho: true
 
 Mappings:
   EstimatedCharges:
-    AlarmRange:     
-      "One" : 20      # It will trigger an alarm if your billing gets higher than $20
-      "Two" : 50      # It will trigger an alarm if your billing gets higher than $50
-      "Three" : 100   # It will trigger an alarm if your billing gets higher than $100
-      "Four" : 500    # It will trigger an alarm if your billing gets higher than $500
-      "Five" : 1000   # It will trigger an alarm if your billing gets higher than $1000
+    AlarmRange:
+      One: 20 # It will trigger an alarm if your billing gets higher than $20
+      Two: 50 # It will trigger an alarm if your billing gets higher than $50
+      Three: 100 # It will trigger an alarm if your billing gets higher than $100
+      Four: 500 # It will trigger an alarm if your billing gets higher than $500
+      Five: 1000 # It will trigger an alarm if your billing gets higher than $1000
 
 # Conditions: 
 
 Resources:
   General:
-  # Don't name resources. Create the prefix needed. 
-  # Pascal/title case. 
+    # Don't name resources. Create the prefix needed. 
+    # Pascal/title case. 
     Type: AWS::S3::Bucket
-    Properties: 
+    Properties:
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
@@ -38,7 +48,13 @@ Resources:
     Properties:
       AlarmActions:
         - !Ref BillingAlertTopic
-      AlarmDescription: !Join ["", [Billing Alert for $, !FindInMap [EstimatedCharges, AlarmRange, One]]]
+      AlarmDescription: !Join
+        - ''
+        - - Billing Alert for $
+          - !FindInMap
+            - EstimatedCharges
+            - AlarmRange
+            - One
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: Currency
@@ -49,16 +65,31 @@ Resources:
       Period: 21600
       TreatMissingData: breaching
       Statistic: Maximum
-      Threshold: !FindInMap [EstimatedCharges, AlarmRange, One]
+      Threshold: !FindInMap
+        - EstimatedCharges
+        - AlarmRange
+        - One
 
+  BillingAlertTopic:
+    Type: AWS::SNS::Topic
+
+  AlarmSubscriberEmail:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: !Ref Email
+      Protocol: email
+      TopicArn: !Ref BillingAlertTopic
+
+  AlarmSubscriberSMS:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: !Ref Phone
+      Protocol: sms
+      TopicArn: !Ref BillingAlertTopic
 
 Outputs:
   GeneralBucketName:
     Description: Description for general bucket
     Value: !Ref General
-    Export: 
-      Name: !Sub "${AWS::StackName}-GeneralBucketName"
-
-
-# TODO: Add billing alarms 
-# TODO: All AWS Bare minimum to get rolling. 
+    Export:
+      Name: !Sub ${AWS::StackName}-GeneralBucketName

@@ -16,9 +16,11 @@ jobs:
       - name: Setup Cloud Formation Linter with Latest Version
         uses: scottbrenner/cfn-lint-action@v2
 
-        # Set the naems of the files to check in the "cfn-lint" command area. 
-
       - name: Print the Cloud Formation Linter Version & run Linter.
         run: |
           cfn-lint --version
           cfn-lint cloudformations/*.yaml
+
+      - name: Echo branch name
+        run: echo ${{ GITHUB_REF_NAME }}
+        
