@@ -17,7 +17,7 @@ Resources:
   ApiGatewayApi:
     Type: AWS::Serverless::Api
     Properties:
-      StageName: prod
+      StageName: dev
 
   ApiFunction: # Adds a GET method at the root resource via an Api event
     Type: AWS::Serverless::Function
@@ -35,12 +35,35 @@ Resources:
             Path: /{proxy+}
             Method: ANY
             RestApiId: !Ref ApiGatewayApi
-      Role: !GetAtt ListTrackerIAMExecutionRole.Arn
+      Role: !GetAtt 
+        - !Sub "ListTrackerIAMExecutionRole-{$BranchName}"
+        - Arn
       Runtime: python3.10
       Handler: index.handler
       CodeUri: ../api/ 
       LoggingConfig:
         LogGroup: !Ref ApiRootLogs
+
+  Authorizer:
+    Type: 'AWS::ApiGateway::Authorizer'
+    Properties:
+      AuthorizerCredentials: !GetAtt
+        - !Sub "ListTrackerIAMExecutionRole-{$BranchName}"
+        - Arn
+      AuthorizerResultTtlInSeconds: '300'
+      AuthorizerUri: !Join 
+        - ''
+        - - 'arn:aws:apigateway:'
+          - !Ref 'AWS::Region'
+          - ':lambda:path/2015-03-31/functions/'
+          - !GetAtt 
+            - !Sub "ListTrackerIAMExecutionRole-${BranchName}.Arn"
+          - /invocations
+      Type: TOKEN
+      IdentitySource: method.request.header.auth-token
+      Name: ListTrackerAuthorizer24
+      RestApiId: !Ref ApiGatewayApi
+
 
   ApiRootLogs:
     Type: AWS::Logs::LogGroup
