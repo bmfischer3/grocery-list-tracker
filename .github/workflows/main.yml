@@ -27,6 +27,7 @@ jobs:
           role-to-assume: arn:aws:iam::${{ secrets.ASSUME_ACTION_ROLE_ACCT_ID }}:role/GitHubAction-AssumeRoleWithAction
           role-session-name: GitHub_to_AWS_via_FederatedOIDC
           aws-region: ${{ env.AWS_REGION }}
+
       - name: Sts GetCallerIdentity
         run: |
           aws sts get-caller-identity
@@ -52,8 +53,6 @@ jobs:
       - name: Use Sanitized Branch Name
         run: |
           echo "The sanitized branch name is: ${{ env.SANITIZED_BRANCH_NAME }}"
-          # Example: Using the sanitized branch name in a command
-          aws cloudformation describe-stacks --stack-name listtracker-api-${{ env.SANITIZED_BRANCH_NAME }}
 
   deploy:
     needs: create-stack-name
