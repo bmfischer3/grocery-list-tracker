@@ -41,8 +41,8 @@ jobs:
     needs: cloudformation-linter-validation
     runs-on: ubuntu-latest
     steps:
-      - name: Git clone the repository
-        uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v1.7.0
@@ -80,14 +80,14 @@ jobs:
     - name: Use Sanitized Branch Name
       run: |
         echo "The sanitized branch name is: ${{ env.SANITIZED_BRANCH_NAME }}"
-    - name: Checkout Repository
-      uses: actions/checkout@v2
+    - name: Checkout
+      uses: actions/checkout@v4
       with:
         fetch-depth: 2 # To fetch the current commit and its parent (so we can compare)
 
 
   aws-authentication:
-    needs: build-stack
+    needs: create-name-variables
     runs-on: ubuntu-latest
     steps:
     - name: Setup AWS CLI
