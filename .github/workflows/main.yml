@@ -14,9 +14,10 @@ permissions:
 
 
 jobs:
-  AssumeRoleAndCallIdentity:
+  create-stack-name:
     runs-on: ubuntu-latest
     steps:
+
       - name: Git clone the repository
         uses: actions/checkout@v3
 
@@ -29,13 +30,6 @@ jobs:
       - name: Sts GetCallerIdentity
         run: |
           aws sts get-caller-identity
-  
-  create-stack-name:
-    needs: AssumeRoleAndCallIdentity
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v2
 
       - name: Determine Branch Name
         id: determine_branch
