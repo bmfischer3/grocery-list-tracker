@@ -59,16 +59,16 @@ jobs:
           echo "List of changed files:" 
           echo $(git diff --name-only HEAD^ HEAD)
 
-          - name: Determine Branch Name
-          id: determine_branch
-          run: |
-            if [ "${{ github.event_name }}" == "pull_request" ]; then
-              BRANCH_NAME=${{ github.head_ref }}
-            else
-              BRANCH_NAME=${GITHUB_REF#refs/heads/}
-            fi
-            echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
-            echo "Branch Name: $BRANCH_NAME"
+      - name: Determine Branch Name
+        id: determine_branch
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            BRANCH_NAME=${{ github.head_ref }}
+          else
+            BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          fi
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+          echo "Branch Name: $BRANCH_NAME"
     
       - name: Sanitize Branch Name
         id: sanitize_branch
