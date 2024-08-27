@@ -36,7 +36,7 @@ jobs:
           else
             echo "Branch Name: ${GITHUB_REF#refs/heads/}"
           fi
-          
+
   build-stack:
     needs: cloudformation-linter-validation
     runs-on: ubuntu-latest
@@ -56,7 +56,6 @@ jobs:
           aws sts get-caller-identity
 
   create-name-variables:
-    needs: build-stack
     runs-on: ubuntu-latest
     steps:
     - name: Determine Branch Name
@@ -151,4 +150,6 @@ jobs:
             --parameter-overrides BranchName=${{env.SANITIZED_BRANCH_NAME}} \
             --stack-name "listtracker-dynamodb-${{env.SANITIZED_BRANCH_NAME}}" \
             --capabilities CAPABILITY_IAM \
-            --capabilities CAPABILITY_NAMED_IAM
+            --capabilities CAPABILITY_NAMED_IAM \
+
+            

@@ -15,7 +15,7 @@ Resources:
     Type: AWS::DynamoDB::Table
     Properties:
       DeletionProtectionEnabled: false
-      TableName: !Sub "${AWS::StackName}-lists-${BranchName}"
+      TableName: !Sub "${AWS::StackName}-lists"
       AttributeDefinitions:
         - 
           AttributeName: "user_id"
