@@ -3,9 +3,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: '---'
 
-# Metadata: 
-# Conditions: 
-
 Resources:
   General:
     # Don't name resources. Create the prefix needed. 

@@ -107,9 +107,9 @@ jobs:
     - name: Deploy Modified Files
       run: |
         aws cloudformation deploy \
-            --template-file cloudformations/00_foundation.yaml \
+            --template-file "cloudformations/00_foundation.yaml" \
             --stack-name foundation \
-            --tags name=foundation \
+            --tags name=foundation
 
         # Getting the GeneralBucketName 
 
