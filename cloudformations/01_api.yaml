@@ -69,7 +69,6 @@ Resources:
   ListTrackerIAMExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: "ListTrackerIAMExecutionRole"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
