@@ -101,8 +101,6 @@ jobs:
             --s3-bucket $GeneralBucketName \
             --s3-prefix infrastructure/api \
             --output-template-file cloudformations/01_api_generated.yaml \
-
-        aws cloudformation package \
             --template-file cloudformations/02_dynamodb.yaml \
             --s3-bucket $GeneralBucketName \
             --s3-prefix infrastructure/api \
@@ -113,7 +111,7 @@ jobs:
             --parameter-overrides BranchName=${{env.SANITIZED_BRANCH_NAME}} \
             --stack-name "listtracker-api-${{env.SANITIZED_BRANCH_NAME}}" \
             --capabilities CAPABILITY_IAM \
-            --capabilities CAPABILITY_NAMED_IAM
+            --capabilities CAPABILITY_NAMED_IAM \
 
         aws cloudformation deploy \
             --template-file cloudformations/02_dynamodb_generated.yaml \
