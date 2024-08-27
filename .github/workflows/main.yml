@@ -32,32 +32,31 @@ jobs:
         run: |
           aws sts get-caller-identity
 
-      - name: Determine Branch Name
-        id: determine_branch
-        run: |
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            BRANCH_NAME=${{ github.head_ref }}
-          else
-            BRANCH_NAME=${GITHUB_REF#refs/heads/}
-          fi
-          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
-          echo "Branch Name: $BRANCH_NAME"
-
-      - name: Sanitize Branch Name
-        id: sanitize_branch
-        run: |
-          SANITIZED_BRANCH_NAME=$(echo "${BRANCH_NAME}" | tr '/.' '-' | tr -cd '[:alnum:]-')
-          echo "SANITIZED_BRANCH_NAME=${SANITIZED_BRANCH_NAME}" >> $GITHUB_ENV
-          echo "Sanitized Branch Name: ${SANITIZED_BRANCH_NAME}"
-
-      - name: Use Sanitized Branch Name
-        run: |
-          echo "The sanitized branch name is: ${{ env.SANITIZED_BRANCH_NAME }}"
-
   deploy:
     needs: create-stack-name
     runs-on: ubuntu-latest
     steps:
+    - name: Determine Branch Name
+      id: determine_branch
+      run: |
+        if [ "${{ github.event_name }}" == "pull_request" ]; then
+          BRANCH_NAME=${{ github.head_ref }}
+        else
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+        fi
+        echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+        echo "Branch Name: $BRANCH_NAME"
+
+    - name: Sanitize Branch Name
+      id: sanitize_branch
+      run: |
+        SANITIZED_BRANCH_NAME=$(echo "${BRANCH_NAME}" | tr '/.' '-' | tr -cd '[:alnum:]-')
+        echo "SANITIZED_BRANCH_NAME=${SANITIZED_BRANCH_NAME}" >> $GITHUB_ENV
+        echo "Sanitized Branch Name: ${SANITIZED_BRANCH_NAME}"
+
+    - name: Use Sanitized Branch Name
+      run: |
+        echo "The sanitized branch name is: ${{ env.SANITIZED_BRANCH_NAME }}"
     - name: Checkout Repository
       uses: actions/checkout@v2
       with:
@@ -106,7 +105,7 @@ jobs:
 
         aws cloudformation deploy \
             --template-file cloudformations/01_api_generated.yaml \
-            --stack-name "listtracker-api-${SANITIZED_BRANCH_NAME}" \
+            --stack-name "listtracker-api-${{env.SANITIZED_BRANCH_NAME}}" \
             --capabilities CAPABILITY_IAM \
             --capabilities CAPABILITY_NAMED_IAM
 
