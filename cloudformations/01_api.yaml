@@ -1,13 +1,23 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: AWS SAM template with a simple API definition
+
+Parameters:
+  BranchName:
+    Type: String
+    Description: The name of the GitHub branch used to create this stack. To be overriden in deploy function. 
+    Default: dev
+  Region:
+    Type: String
+    Description: Region that the stack is deployed to. 
+    Default: us-east-1
+
 Resources:
 
   ApiGatewayApi:
     Type: AWS::Serverless::Api
     Properties:
       StageName: prod
-
 
   ApiFunction: # Adds a GET method at the root resource via an Api event
     Type: AWS::Serverless::Function
@@ -36,40 +46,12 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       RetentionInDays: 1
-      LogGroupName: !Sub "${AWS::StackName}-ApiRoot"
-  
-  # setup deletion protection on prod, use mapping
-  ListTrackerDynamoDBTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: !Sub "${AWS::StackName}-lists"
-      AttributeDefinitions:
-        - 
-          AttributeName: "user_id"
-          AttributeType: "S"
-        -
-          AttributeName: "list_id"
-          AttributeType: "S"
-      KeySchema:
-        - 
-          AttributeName: "user_id"
-          KeyType: "HASH"   # Partition Key
-        - 
-          AttributeName: "list_id"
-          KeyType: "RANGE"   # Sort Key
-
-      ProvisionedThroughput: 
-        ReadCapacityUnits: 5
-        WriteCapacityUnits: 5
-      
-      Tags:
-        - Key: name
-          Value: dyanmodbtable 
+      LogGroupName: !Sub "${AWS::StackName}-ApiRoot-${BranchName}"
       
   ListTrackerIAMExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: "ListTrackerIAMExecutionRole"
+      RoleName: !Sub "ListTrackerIAMExecutionRole-${BranchName}"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -80,18 +62,16 @@ Resources:
              - apigateway.amazonaws.com
           Action: 'sts:AssumeRole'
       Policies:
-      - PolicyName: ListTrackerDynamoDBAcessPolicy
+      - PolicyName: ListTrackerDynamoDBAccessPolicy
         PolicyDocument:
           Version: "2012-10-17"
           Statement:
             - Effect: Allow
               Action: '*'
-              Resource: 
-              - !GetAtt ListTrackerDynamoDBTable.Arn
-              - !Sub "${ListTrackerDynamoDBTable.Arn}/*"
-            - Effect: Allow 
+              # TODO: Specify the exact resource later. 
+              Resource: '*'
+            - Effect: Allow
               Action: '*'
               Resource: 
-                - !GetAtt  ApiRootLogs.Arn
+                - !GetAtt ApiRootLogs.Arn
                 - !Sub "${ApiRootLogs.Arn}/*"
-

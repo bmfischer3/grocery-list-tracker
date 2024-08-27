@@ -4,10 +4,8 @@ on:
   workflow_dispatch:
   pull_request:
 
-
-
 env:
-  AWS_REGION : us-east-1 #Change to reflect your Region
+  AWS_REGION : us-east-1 # Change to reflect your Region
 
 permissions:
       id-token: write   # This is required for requesting the JWT
@@ -15,81 +13,119 @@ permissions:
 
 
 jobs:
-  AssumeRoleAndCallIdentity:
+  cloudformation-linter-validation:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Cloud Formation Linter with Latest Version
+        uses: scottbrenner/cfn-lint-action@v2
+
+      - name: Print the Cloud Formation Linter Version & run Linter.
+        run: |
+          cfn-lint --version
+          cfn-lint cloudformations/*.yaml
+
+      - name: Echo branch name
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "Branch Name: ${{ github.head_ref }}"
+          else
+            echo "Branch Name: ${GITHUB_REF#refs/heads/}"
+          fi
+
+  deploy:
+    needs: [cloudformation-linter-validation]
     runs-on: ubuntu-latest
     steps:
-      - name: Git clone the repository
-        uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v1.7.0
         with:
-          role-to-assume: arn:aws:iam::${{ env.ACCT_ID }}:role/GitHubAction-AssumeRoleWithAction
+          role-to-assume: arn:aws:iam::${{ secrets.ASSUME_ACTION_ROLE_ACCT_ID }}:role/GitHubAction-AssumeRoleWithAction
           role-session-name: GitHub_to_AWS_via_FederatedOIDC
           aws-region: ${{ env.AWS_REGION }}
-      # Hello from AWS: WhoAmI
+
       - name: Sts GetCallerIdentity
         run: |
           aws sts get-caller-identity
 
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 2 # To fetch the current commit and its parent (so we can compare)
-
-    - name: Setup AWS CLI
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        role-to-assume: arn:aws:iam::${{ env.ACCT_ID }}:role/GitHubAction-AssumeRoleWithAction #change to reflect your IAM role’s ARN
-        role-session-name: GitHub_to_AWS_via_FederatedOIDC
-        aws-region: ${{ env.AWS_REGION }}
-        # aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        # aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        # aws-region: us-east-1 
-
-    - name: Print changed files # To properly debug what is being deployed (It can be removed).
-      run: |
-        echo "List of changed files:" 
-        echo $(git diff --name-only HEAD^ HEAD)
-
-    - name: Deploy Modified Files
-      run: |
-        aws cloudformation deploy \
-            --template-file cloudformations/00_foundation.yaml \
-            --stack-name foundation \
-            --tags name=foundation
-
-        # Getting the GeneralBucketName 
-
-        GeneralBucketName=$(aws cloudformation describe-stacks \
-            --stack-name foundation \
-            --query 'Stacks[0].Outputs[?OutputKey==`GeneralBucketName`].OutputValue' \
-            --output text)
-
-        # Deploying the API
-
-        cfndir=$PWD
-        cd api
-        pip install -r requirements.txt -t .
-        cd $cfndir
+      - name: Determine Branch Name
+        id: determine_branch
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            BRANCH_NAME=${{ github.head_ref }}
+          else
+            BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          fi
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+          echo "Branch Name: $BRANCH_NAME"
+    
+      - name: Sanitize Branch Name
+        id: sanitize_branch
+        run: |
+          SANITIZED_BRANCH_NAME=$(echo "${BRANCH_NAME}" | tr '/.' '-' | tr -cd '[:alnum:]-')
+          echo "SANITIZED_BRANCH_NAME=${SANITIZED_BRANCH_NAME}" >> $GITHUB_ENV
+          echo "Sanitized Branch Name: ${SANITIZED_BRANCH_NAME}"
+  
+      - name: Use Sanitized Branch Name
+        run: |
+          echo "The sanitized branch name is: ${{ env.SANITIZED_BRANCH_NAME }}"
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 # To fetch the current commit and its parent (so we can compare)
 
 
-        aws cloudformation package \
-            --template-file cloudformations/01_api.yaml \
-            --s3-bucket $GeneralBucketName \
-            --s3-prefix infrastructure/api \
-            --output-template-file cloudformations/01_api_generated.yaml \
+      - name: Deploy Modified Files
+        run: |
+          aws cloudformation deploy \
+              --template-file cloudformations/00_foundation.yaml \
+              --stack-name foundation \
+              --tags name=foundation
+
+          # Getting the GeneralBucketName 
+
+          GeneralBucketName=$(aws cloudformation describe-stacks \
+              --stack-name foundation \
+              --query 'Stacks[0].Outputs[?OutputKey==`GeneralBucketName`].OutputValue' \
+              --output text)
+
+          # Deploying the API
+
+          cfndir=$PWD
+          cd api
+          pip install -r requirements.txt -t .
+          cd $cfndir
 
 
-        # TODO: Upload to bucket. 
+          aws cloudformation package \
+              --template-file cloudformations/01_api.yaml \
+              --s3-bucket $GeneralBucketName \
+              --s3-prefix infrastructure/api \
+              --output-template-file cloudformations/01_api_generated.yaml \
 
-        aws cloudformation deploy \
-            --template-file cloudformations/01_api_generated.yaml \
-            --stack-name listtracker-api \
-            --capabilities CAPABILITY_IAM \
-            --capabilities CAPABILITY_NAMED_IAM
+          aws cloudformation package \
+              --template-file cloudformations/02_dynamodb.yaml \
+              --s3-bucket $GeneralBucketName \
+              --s3-prefix infrastructure/api \
+              --output-template-file cloudformations/02_dynamodb_generated.yaml \
 
+          aws cloudformation deploy \
+              --template-file cloudformations/01_api_generated.yaml \
+              --parameter-overrides BranchName=${{env.SANITIZED_BRANCH_NAME}} \
+              --stack-name "listtracker-api-${{env.SANITIZED_BRANCH_NAME}}" \
+              --capabilities CAPABILITY_IAM \
+              --capabilities CAPABILITY_NAMED_IAM \
+
+          aws cloudformation deploy \
+              --template-file cloudformations/02_dynamodb_generated.yaml \
+              --parameter-overrides BranchName=${{env.SANITIZED_BRANCH_NAME}} \
+              --stack-name "listtracker-dynamodb-${{env.SANITIZED_BRANCH_NAME}}" \
+              --capabilities CAPABILITY_IAM \
+              --capabilities CAPABILITY_NAMED_IAM \
 
