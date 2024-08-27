@@ -50,6 +50,7 @@ Resources:
   ListTrackerDynamoDBTable:
     Type: AWS::DynamoDB::Table
     Properties:
+      DeletionProtectionEnabled: true # Focus here
       TableName: !Sub "${AWS::StackName}-lists-${BranchName}"
       AttributeDefinitions:
         - 
