@@ -37,24 +37,6 @@ jobs:
             echo "Branch Name: ${GITHUB_REF#refs/heads/}"
           fi
 
-  build-stack:
-    needs: [cloudformation-linter-validation, create-name-variables, aws-authentication]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Git clone the repository
-        uses: actions/checkout@v3
-
-      - name: configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v1.7.0
-        with:
-          role-to-assume: arn:aws:iam::${{ secrets.ASSUME_ACTION_ROLE_ACCT_ID }}:role/GitHubAction-AssumeRoleWithAction
-          role-session-name: GitHub_to_AWS_via_FederatedOIDC
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Sts GetCallerIdentity
-        run: |
-          aws sts get-caller-identity
-
   create-name-variables:
     needs: cloudformation-linter-validation
     runs-on: ubuntu-latest
@@ -85,8 +67,28 @@ jobs:
       with:
         fetch-depth: 2 # To fetch the current commit and its parent (so we can compare)
 
-  aws-authentication:
+
+  build-stack:
     needs: create-name-variables
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git clone the repository
+        uses: actions/checkout@v3
+
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v1.7.0
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.ASSUME_ACTION_ROLE_ACCT_ID }}:role/GitHubAction-AssumeRoleWithAction
+          role-session-name: GitHub_to_AWS_via_FederatedOIDC
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Sts GetCallerIdentity
+        run: |
+          aws sts get-caller-identity
+
+
+  aws-authentication:
+    needs: build-stack
     runs-on: ubuntu-latest
     steps:
     - name: Setup AWS CLI
@@ -102,7 +104,7 @@ jobs:
         echo $(git diff --name-only HEAD^ HEAD)
 
   deploy:
-    needs: [aws-authentication, build-stack] 
+    needs: aws-authentication
     runs-on: ubuntu-latest
     steps:
     - name: Deploy Modified Files
