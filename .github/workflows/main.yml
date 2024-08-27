@@ -105,6 +105,8 @@ jobs:
     needs: aws-authentication
     runs-on: ubuntu-latest
     steps:
+    - name: Checkout
+      uses: actions/checkout@v4
     - name: Deploy Modified Files
       run: |
         aws cloudformation deploy \
