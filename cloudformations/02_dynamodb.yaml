@@ -14,7 +14,7 @@ Resources:
   ListTrackerDynamoDBTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      DeletionProtectionEnabled: true # Focus here
+      DeletionProtectionEnabled: false
       TableName: !Sub "${AWS::StackName}-lists-${BranchName}"
       AttributeDefinitions:
         - 
