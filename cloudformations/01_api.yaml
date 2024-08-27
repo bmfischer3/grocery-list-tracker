@@ -71,10 +71,9 @@ Resources:
               Resource: 
               - !ImportValue ListTrackerDynamoDBTableARN
               - Fn::ImportValue:
-                - !Sub "${ListTrackerDynamoDBTableARN.Arn}/*"
+                - !Sub "${ListTrackerDynamoDBTableARN}/*"
             - Effect: Allow
               Action: '*'
               Resource: 
                 - !GetAtt ApiRootLogs.Arn
                 - !Sub "${ApiRootLogs.Arn}/*"
-
