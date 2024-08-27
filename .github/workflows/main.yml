@@ -54,11 +54,6 @@ jobs:
         run: |
           aws sts get-caller-identity
 
-      - name: Print changed files # To properly debug what is being deployed.
-        run: |
-          echo "List of changed files:" 
-          echo $(git diff --name-only HEAD^ HEAD)
-
       - name: Determine Branch Name
         id: determine_branch
         run: |
