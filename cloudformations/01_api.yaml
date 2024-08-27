@@ -69,7 +69,7 @@ Resources:
             - Effect: Allow
               Action: '*'
               Resource:         
-                - Fn::ImportValue: !Sub "${ListTrackerDynamoDBTableARN}"
+                - Fn::ImportValue: !Sub ListTrackerDynamoDBTableARN
                 - Fn::ImportValue: !Sub "${ListTrackerDynamoDBTableARN}/*"
             - Effect: Allow
               Action: '*'
