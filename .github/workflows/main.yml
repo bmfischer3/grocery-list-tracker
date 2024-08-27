@@ -101,7 +101,7 @@ jobs:
         echo $(git diff --name-only HEAD^ HEAD)
 
   deploy:
-    needs: aws-authentication
+    needs: [aws-authentication, build-stack] 
     runs-on: ubuntu-latest
     steps:
     - name: Deploy Modified Files
@@ -152,4 +152,3 @@ jobs:
             --capabilities CAPABILITY_IAM \
             --capabilities CAPABILITY_NAMED_IAM \
 
-            
