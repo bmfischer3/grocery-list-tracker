@@ -101,6 +101,8 @@ jobs:
             --s3-bucket $GeneralBucketName \
             --s3-prefix infrastructure/api \
             --output-template-file cloudformations/01_api_generated.yaml \
+
+        aws cloudformation package \
             --template-file cloudformations/02_dynamodb.yaml \
             --s3-bucket $GeneralBucketName \
             --s3-prefix infrastructure/api \
