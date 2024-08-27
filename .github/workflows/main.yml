@@ -104,11 +104,9 @@ jobs:
             --output-template-file cloudformations/01_api_generated.yaml \
 
 
-        # TODO: Upload to bucket. 
-
         aws cloudformation deploy \
             --template-file cloudformations/01_api_generated.yaml \
-            --stack-name listtracker-api-${{ env.SANITIZED_BRANCH_NAME }} \
+            --stack-name 'listtracker-api-${{ env.SANITIZED_BRANCH_NAME }}' \
             --capabilities CAPABILITY_IAM \
             --capabilities CAPABILITY_NAMED_IAM
 
