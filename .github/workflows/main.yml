@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   pull_request:
 
+
 env:
   AWS_REGION : us-east-1 # Change to reflect your Region
 
@@ -13,8 +14,9 @@ permissions:
 
 
 jobs:
-  cloudformation-linter-validation:
+  cloudformation-linter:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,12 +37,13 @@ jobs:
             echo "Branch Name: ${GITHUB_REF#refs/heads/}"
           fi
 
-  get-credentials:
-    needs: cloudformation-linter-validation
+  create-stack-name:
+    needs: cloudformation-linter
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+
+      - name: Git clone the repository
+        uses: actions/checkout@v3
 
       - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v1.7.0
@@ -52,9 +55,9 @@ jobs:
       - name: Sts GetCallerIdentity
         run: |
           aws sts get-caller-identity
-
+          
   deploy:
-    needs: [cloudformation-linter-validation, get-credentials]
+    needs: create-stack-name
     runs-on: ubuntu-latest
     steps:
     - name: Determine Branch Name
