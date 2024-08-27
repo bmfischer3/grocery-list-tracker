@@ -84,29 +84,22 @@ jobs:
       with:
         fetch-depth: 2 # To fetch the current commit and its parent (so we can compare)
 
-
-  aws-authentication:
+  deploy:
     needs: create-name-variables
     runs-on: ubuntu-latest
     steps:
+    - name: Checkout
+      uses: actions/checkout@v4
     - name: Setup AWS CLI
       uses: aws-actions/configure-aws-credentials@v1
       with:
         role-to-assume: arn:aws:iam::${{ secrets.ASSUME_ACTION_ROLE_ACCT_ID }}:role/GitHubAction-AssumeRoleWithAction 
         role-session-name: GitHub_to_AWS_via_FederatedOIDC
         aws-region: ${{ env.AWS_REGION }}
-
     - name: Print changed files # To properly debug what is being deployed.
       run: |
         echo "List of changed files:" 
         echo $(git diff --name-only HEAD^ HEAD)
-
-  deploy:
-    needs: aws-authentication
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
     - name: Deploy Modified Files
       run: |
         aws cloudformation deploy \
