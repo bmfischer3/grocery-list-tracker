@@ -38,9 +38,3 @@ Resources:
       Tags:
         - Key: name
           Value: dyanmodbtable 
-
-Outputs:
-  ListTrackerDynamoDBTableARN:
-     Value: !GetAtt ListTrackerDynamoDBTable.Arn
-     Export:
-        Name: ListTrackerDynamoDBTableARN
