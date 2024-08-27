@@ -7,7 +7,10 @@ Parameters:
     Type: String
     Description: The name of the GitHub branch used to create this stack. To be overriden in deploy function. 
     Default: dev
-
+  Region:
+    Type: String
+    Description: Region that the stack is deployed to. 
+    Default: us-east-1
 
 Resources:
 
@@ -15,7 +18,6 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       StageName: prod
-
 
   ApiFunction: # Adds a GET method at the root resource via an Api event
     Type: AWS::Serverless::Function
@@ -45,35 +47,6 @@ Resources:
     Properties:
       RetentionInDays: 1
       LogGroupName: !Sub "${AWS::StackName}-ApiRoot-${BranchName}"
-  
-  # setup deletion protection on prod, use mapping
-  ListTrackerDynamoDBTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      DeletionProtectionEnabled: true # Focus here
-      TableName: !Sub "${AWS::StackName}-lists-${BranchName}"
-      AttributeDefinitions:
-        - 
-          AttributeName: "user_id"
-          AttributeType: "S"
-        -
-          AttributeName: "list_id"
-          AttributeType: "S"
-      KeySchema:
-        - 
-          AttributeName: "user_id"
-          KeyType: "HASH"   # Partition Key
-        - 
-          AttributeName: "list_id"
-          KeyType: "RANGE"   # Sort Key
-
-      ProvisionedThroughput: 
-        ReadCapacityUnits: 5
-        WriteCapacityUnits: 5
-      
-      Tags:
-        - Key: name
-          Value: dyanmodbtable 
       
   ListTrackerIAMExecutionRole:
     Type: AWS::IAM::Role
@@ -89,15 +62,16 @@ Resources:
              - apigateway.amazonaws.com
           Action: 'sts:AssumeRole'
       Policies:
-      - PolicyName: ListTrackerDynamoDBAcessPolicy
+      - PolicyName: ListTrackerDynamoDBAccessPolicy
         PolicyDocument:
           Version: "2012-10-17"
           Statement:
             - Effect: Allow
               Action: '*'
               Resource: 
-              - !GetAtt ListTrackerDynamoDBTable.Arn
-              - !Sub "${ListTrackerDynamoDBTable.Arn}/*"
+              - !ImportValue ListTrackerDynamoDBTableARN
+              - Fn::ImportValue:
+                !Sub "${ListTrackerDynamoDBTableARN.Arn}/*"
             - Effect: Allow 
               Action: '*'
               Resource: 
