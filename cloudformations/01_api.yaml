@@ -1,6 +1,14 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: AWS SAM template with a simple API definition
+
+Parameters:
+  BranchName:
+    Type: String
+    Description: The name of the GitHub branch used to create this stack. To be overriden in deploy function. 
+    Default: dev
+
+
 Resources:
 
   ApiGatewayApi:
@@ -25,7 +33,7 @@ Resources:
             Path: /{proxy+}
             Method: ANY
             RestApiId: !Ref ApiGatewayApi
-      Role: !GetAtt ListTrackerIAMExecutionRole-.Arn
+      Role: !GetAtt ListTrackerIAMExecutionRole.Arn
       Runtime: python3.10
       Handler: index.handler
       CodeUri: ../api/ 
@@ -36,13 +44,13 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       RetentionInDays: 1
-      LogGroupName: !Sub "${AWS::StackName}-ApiRoot"
+      LogGroupName: !Sub "${AWS::StackName}-ApiRoot-${BranchName}"
   
   # setup deletion protection on prod, use mapping
   ListTrackerDynamoDBTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub "${AWS::StackName}-lists"
+      TableName: !Sub "${AWS::StackName}-lists-${BranchName}"
       AttributeDefinitions:
         - 
           AttributeName: "user_id"
@@ -66,9 +74,10 @@ Resources:
         - Key: name
           Value: dyanmodbtable 
       
-  ListTrackerIAMExecutionRole-:
+  ListTrackerIAMExecutionRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: !Sub "ListTrackerIAMExecutionRole-${BranchName}"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
