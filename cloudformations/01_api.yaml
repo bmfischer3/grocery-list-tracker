@@ -97,11 +97,19 @@ Resources:
               Resource: '*'
             - Effect: Allow
               Action: '*'
+              
               Resource:
-                - !Sub
-                  "${ApiRootLogs.Arn}"
-                - !Sub 
-                  "${ApiRootLogs.Arn}/*"
+                !Sub
+                  - "${ApiRootLogs.Arn}"
+                !Sub
+                  - "${ApiRootLogs.Arn}/*"
+              
+              
+              # Resource:
+              #   - !Sub
+              #     "${ApiRootLogs.Arn}"
+              #   - !Sub 
+              #     "${ApiRootLogs.Arn}/*"
 
 
               # Resources:
