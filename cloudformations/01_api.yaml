@@ -18,6 +18,26 @@ Parameters:
       - stage
     ConstraintDescription: "Must be dev, prod, or stage."
 
+  AlarmEmail:
+    Default: "{{resolve:ssm:email_address}}"
+    Description: "Email address to notify of operational issues"
+    Type: "String"
+
+Conditions:
+  IsProd: !Equals [ !Ref EnvironmentType, prod]
+  IsDev: !Equals [ !Ref EnvironmentType, dev]
+
+
+Mappings:
+  EnvConfig:
+    # DynamoDB
+    dev:
+      DeletionProtectionEnabled: false
+    prod:
+      DeletionProtectionEnabled: true
+
+
+
 Resources:
 
   ApiGatewayApi:
@@ -70,6 +90,7 @@ Resources:
              - apigateway.amazonaws.com
           Action: 'sts:AssumeRole'
       Policies:
+      - PolicyName: anything
         PolicyDocument:
           Version: "2012-10-17"
           Statement:
@@ -79,6 +100,81 @@ Resources:
               Resource: '*'
             - Effect: Allow
               Action: '*'
-              Resource: 
-                - !GetAtt ApiRootLogs.Arn
-                - !Join [ "", [ !GetAtt ApiRootLogs.Arn, "/*" ] ]
+              Resource:
+                - !Sub "${ApiRootLogs.Arn}" 
+                - !Sub "${ApiRootLogs.Arn}/*"
+
+# SQS
+
+  ListTrackQueue: 
+    Type: AWS::SQS::Queue
+    Properties: 
+  AlarmTopic: 
+    Type: AWS::SNS::Topic
+    Properties: 
+      Subscription: 
+        - 
+          Endpoint: 
+            Ref: "AlarmEmail"
+          Protocol: "email"
+
+  QueueDepthAlarm: 
+    Type: AWS::CloudWatch::Alarm
+    Condition: IsDev
+    Properties: 
+      AlarmDescription: "Alarm if queue depth increases to more than 10 messages"
+      Namespace: "AWS/SQS"
+      MetricName: "ApproximateNumberOfMessagesVisible"
+      Dimensions: 
+        -
+          Name: "QueueName"
+          Value: !GetAtt ListTrackQueue.QueueName
+      Statistic: "Sum"
+      Period: "300"
+      EvaluationPeriods: "1"
+      Threshold: "10"
+      ComparisonOperator: "GreaterThanThreshold"
+      AlarmActions: !Ref AlarmTopic
+      InsufficientDataActions: !Ref AlarmTopic
+
+  ListTrackerDynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      DeletionProtectionEnabled: !FindInMap [ EnvConfig, !Ref EnvironmentType, DeletionProtectionEnabled]
+      TableName: !Sub "${AWS::StackName}-lists"
+      AttributeDefinitions:
+        - 
+          AttributeName: "user_id"
+          AttributeType: "S"
+        -
+          AttributeName: "list_id"
+          AttributeType: "S"
+      KeySchema:
+        - 
+          AttributeName: "user_id"
+          KeyType: "HASH"   # Partition Key
+        - 
+          AttributeName: "list_id"
+          KeyType: "RANGE"   # Sort Key
+
+      ProvisionedThroughput: 
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      
+      Tags:
+        - Key: name
+          Value: dyanmodbtable 
+
+
+Outputs: 
+  QueueURL: 
+    Description: "URL of new Amazon SQS Queue"
+    Value: !Ref ListTrackQueue
+
+  QueueARN: 
+    Description: "ARN of new AmazonSQS Queue"
+    Value: !GetAtt ListTrackQueue.Arn
+
+  QueueName: 
+    Description: "Name of new Amazon SQS Queue"
+    Value: !GetAtt ListTrackQueue.QueueName
