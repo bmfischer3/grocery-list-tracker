@@ -5,6 +5,7 @@ auth_creds.sh
 !api/templates
 !api/requirements.txt
 !api/index.py
+check_file_get_params_summary.sh
 
 
 
