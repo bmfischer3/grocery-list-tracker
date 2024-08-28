@@ -19,7 +19,7 @@ Parameters:
     ConstraintDescription: "Must be dev, prod, or stage."
 
   AlarmEmail:
-    Default: "{{resolve:ssm:email_address}}"
+    Default: "{{resolve:ssm:email_address:1}}"
     Description: "Email address to notify of operational issues"
     Type: "String"
 
