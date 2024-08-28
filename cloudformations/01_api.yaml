@@ -98,7 +98,7 @@ Resources:
             - Effect: Allow
               Action: '*'
               Resource:
-                - !Sub "${ApiRootLogs.Arn}" 
+                - !GetAtt ApiRootLogs.Arn
                 - !Sub "${ApiRootLogs.Arn}/*"
 
 # SQS
