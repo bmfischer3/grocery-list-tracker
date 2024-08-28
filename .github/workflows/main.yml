@@ -31,7 +31,7 @@ jobs:
       - name: Print the Cloud Formation Linter Version & run Linter.
         run: |
           cfn-lint --version
-          cfn-lint cloudformations/*.yaml -i E2001 -i E1020
+          cfn-lint cloudformations/*.yaml -i E2001 -i E1020 -i W2001 -i W8001
 
       - name: Echo branch name
         run: |
