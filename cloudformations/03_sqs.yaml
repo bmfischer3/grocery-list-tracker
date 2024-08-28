@@ -1,0 +1,73 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: AWS SAM template with a simple API definition
+
+Parameters:
+  BranchName:
+    Type: String
+    Description: The name of the GitHub branch used to create this stack. To be overriden in deploy function. 
+    Default: dev
+  
+  EnvironmentType:
+    Type: String
+    Description: "The environment type for which this is being deployed into."
+    Default: dev
+    AllowedValues:
+      - dev
+      - prod
+      - stage
+    ConstraintDescription: "Must be dev, prod, or stage."
+  
+  AlarmEmail:
+    Default: "{{resolve:ssm:email_address}}"
+    Description: "Email address to notify of operational issues"
+    Type: "String"
+
+Conditions:
+  IsProd: !Equals [ !Ref EnvironmentType, prod]
+  IsDev: !Equals [ !Ref EnvironmentType, dev]
+
+Resources:
+  ListTrackQueue: 
+    Type: AWS::SQS::Queue
+    Properties: 
+  AlarmTopic: 
+    Type: AWS::SNS::Topic
+    Properties: 
+      Subscription: 
+        - 
+          Endpoint: 
+            Ref: "AlarmEmail"
+          Protocol: "email"
+
+  QueueDepthAlarm: 
+    Type: AWS::CloudWatch::Alarm
+    Condition: IsDev
+    Properties: 
+      AlarmDescription: "Alarm if queue depth increases to more than 10 messages"
+      Namespace: "AWS/SQS"
+      MetricName: "ApproximateNumberOfMessagesVisible"
+      Dimensions: 
+        -
+          Name: "QueueName"
+          Value: !GetAtt ListTrackQueue.QueueName
+      Statistic: "Sum"
+      Period: "300"
+      EvaluationPeriods: "1"
+      Threshold: "10"
+      ComparisonOperator: "GreaterThanThreshold"
+      AlarmActions: !Ref AlarmTopic
+      InsufficientDataActions: !Ref AlarmTopic
+
+Outputs: 
+  QueueURL: 
+    Description: "URL of new Amazon SQS Queue"
+    Value: !Ref ListTrackQueue
+
+  QueueARN: 
+    Description: "ARN of new AmazonSQS Queue"
+    Value: !GetAtt ListTrackQueue.Arn
+
+  QueueName: 
+    Description: "Name of new Amazon SQS Queue"
+    Value: !GetAtt ListTrackQueue.QueueName
