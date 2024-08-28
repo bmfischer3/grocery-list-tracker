@@ -27,7 +27,6 @@ Conditions:
   IsProd: !Equals [ !Ref EnvironmentType, prod]
   IsDev: !Equals [ !Ref EnvironmentType, dev]
 
-
 Mappings:
   EnvConfig:
     # DynamoDB
@@ -37,9 +36,7 @@ Mappings:
       DeletionProtectionEnabled: true
 
 
-
 Resources:
-
   ApiGatewayApi:
   # This creates the rest API and sets the name of the stage to the Environment Type
     Type: AWS::Serverless::Api
