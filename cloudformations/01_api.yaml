@@ -136,7 +136,6 @@ Resources:
       EvaluationPeriods: "1"
       Threshold: "10"
       ComparisonOperator: "GreaterThanThreshold"
-      AlarmActions: !Ref AlarmTopic.Arn
       InsufficientDataActions: !Ref AlarmTopic
 
   ListTrackerDynamoDBTable:
