@@ -97,9 +97,16 @@ Resources:
               Resource: '*'
             - Effect: Allow
               Action: '*'
-              Resources:
-                - !GetAtt ApiRootLogs.Arn
-                - !Sub "${ApiRootLogs.Arn}/*"
+              Resource:
+                - !Sub
+                  "${ApiRootLogs.Arn}"
+                - !Sub 
+                  "${ApiRootLogs.Arn}/*"
+
+
+              # Resources:
+              #   - !GetAtt ApiRootLogs.Arn
+              #   - !Sub "${ApiRootLogs.Arn}/*"
 
 
               # Below returns JSON string error. 
