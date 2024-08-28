@@ -97,30 +97,12 @@ Resources:
               Resource: '*'
             - Effect: Allow
               Action: '*'
-              
+
               Resource:
-                !Sub
-                  - "${ApiRootLogs.Arn}"
-                !Sub
-                  - "${ApiRootLogs.Arn}/*"
-              
-              
-              # Resource:
-              #   - !Sub
-              #     "${ApiRootLogs.Arn}"
-              #   - !Sub 
-              #     "${ApiRootLogs.Arn}/*"
-
-
-              # Resources:
-              #   - !GetAtt ApiRootLogs.Arn
-              #   - !Sub "${ApiRootLogs.Arn}/*"
-
-
-              # Below returns JSON string error. 
-              # Resource:
-              #   - !GetAtt ApiRootLogs.Arn
-              #   - !Sub "${ApiRootLogs.Arn}/*"
+                - Fn::GetAtt:
+                  - ListTrackerDynamoDBTable
+                  - Arn
+                - Fn::Sub: ${ListTrackerDynamoDBTable.Arn}/*
 
 # SQS
 
