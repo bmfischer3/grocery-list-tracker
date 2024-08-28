@@ -105,7 +105,8 @@ Resources:
 
   ListTrackQueue: 
     Type: AWS::SQS::Queue
-    Properties: 
+
+
   AlarmTopic: 
     Type: AWS::SNS::Topic
     Properties: 
