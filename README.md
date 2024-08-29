@@ -1,9 +1,9 @@
-# Project Title: List Tracker
+# List Tracker
 
-[Link to live project here --> https://app.grocerylisttracker.com/](#https://app.grocerylisttracker.com/)
+[Link to live project here --> https://app.grocerylisttracker.com/](https://app.grocerylisttracker.com/)
 
 ## Table of Contents
-- [Project Title: List Tracker](#project-title-list-tracker)
+- [List Tracker](#list-tracker)
   - [Table of Contents](#table-of-contents)
   - [Overview](#overview)
   - [Methods](#methods)
@@ -83,7 +83,6 @@ Instructions for how to use the project.
 
 ## Upcoming Updates
 - **SQS**: Implement image uploading to S3 bucket where a reference to the image's location is placed in the DynamoDB table. SQS queue is placed in between the upload invocation and when a lambda function will invoke a put operation on the DDB table. 
--  
 
 
 
