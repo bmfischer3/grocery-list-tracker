@@ -129,15 +129,20 @@ Resources:
       Namespace: "AWS/SQS"
       MetricName: "ApproximateNumberOfMessagesVisible"
       Dimensions: 
-        -
-          Name: "QueueName"
-          Value: !Sub ${ListTrackQueue.QueueName}
+        - Name: "QueueName"
+          Value: !Ref ListTrackQueue
+      # The below actions represent actions that should be taken when the alarm state changes.
+      AlarmActions:
+           - !Ref AlarmTopic
+      OKActions:
+           - !Ref AlarmTopic
+      InsufficientDataActions:
+           - !Ref AlarmTopic
       Statistic: "Sum"
       Period: "300"
       EvaluationPeriods: "1"
       Threshold: "10"
       ComparisonOperator: "GreaterThanThreshold"
-      InsufficientDataActions: !Ref AlarmTopic
 
   ListTrackerDynamoDBTable:
     Type: AWS::DynamoDB::Table
