@@ -80,6 +80,8 @@ Instructions for how to use the project.
 
 ## Limitations
 - **Private Lists**: A login function has not been enabled, thus lists are not private and all lists are publicly available should a user have the ID. 
+- **User Notifications**: Functions have not been added to notify a user of the success or failure of an action. For example, whether a list eists in the database. 
+
 
 ## Upcoming Updates
 - **SQS**: Implement image uploading to S3 bucket where a reference to the image's location is placed in the DynamoDB table. SQS queue is placed in between the upload invocation and when a lambda function will invoke a put operation on the DDB table. 
