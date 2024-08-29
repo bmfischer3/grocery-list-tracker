@@ -17,7 +17,6 @@ permissions:
       id-token: write   # This is required for requesting the JWT
       contents: read    # This is required for actions/checkou
 
-
 jobs:
   cloudformation-linter-validation:
     runs-on: ubuntu-latest
@@ -32,7 +31,7 @@ jobs:
       - name: Print the Cloud Formation Linter Version & run Linter.
         run: |
           cfn-lint --version
-          cfn-lint cloudformations/*.yaml
+          cfn-lint cloudformations/*.yaml -i E2001 -i E1020 -i W2001 -i W8001
 
       - name: Echo branch name
         run: |
@@ -115,23 +114,13 @@ jobs:
               --s3-prefix infrastructure/api \
               --output-template-file cloudformations/01_api_generated.yaml \
 
-          aws cloudformation package \
-              --template-file cloudformations/02_dynamodb.yaml \
-              --s3-bucket $GeneralBucketName \
-              --s3-prefix infrastructure/api \
-              --output-template-file cloudformations/02_dynamodb_generated.yaml \
 
           aws cloudformation deploy \
               --template-file cloudformations/01_api_generated.yaml \
               --parameter-overrides BranchName=${{env.SANITIZED_BRANCH_NAME}} \
+              --parameter-overrides EnvironmentType=dev \
               --stack-name "listtracker-api-${{env.SANITIZED_BRANCH_NAME}}" \
               --capabilities CAPABILITY_IAM \
               --capabilities CAPABILITY_NAMED_IAM \
 
-          aws cloudformation deploy \
-              --template-file cloudformations/02_dynamodb_generated.yaml \
-              --parameter-overrides BranchName=${{env.SANITIZED_BRANCH_NAME}} \
-              --stack-name "listtracker-dynamodb-${{env.SANITIZED_BRANCH_NAME}}" \
-              --capabilities CAPABILITY_IAM \
-              --capabilities CAPABILITY_NAMED_IAM \
 

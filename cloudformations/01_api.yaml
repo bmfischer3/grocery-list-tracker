@@ -7,19 +7,44 @@ Parameters:
     Type: String
     Description: The name of the GitHub branch used to create this stack. To be overriden in deploy function. 
     Default: dev
-  Region:
+  
+  EnvironmentType:
     Type: String
-    Description: Region that the stack is deployed to. 
-    Default: us-east-1
+    Description: "The environment type for which this is being deployed into."
+    Default: dev
+    AllowedValues:
+      - dev
+      - prod
+      - stage
+    ConstraintDescription: "Must be dev, prod, or stage."
+
+  AlarmEmail:
+    Default: "{{resolve:ssm:email_address:1}}"
+    Description: "Email address to notify of operational issues"
+    Type: "String"
+
+Conditions:
+  IsProd: !Equals [ !Ref EnvironmentType, prod]
+  IsDev: !Equals [ !Ref EnvironmentType, dev]
+
+Mappings:
+  EnvConfig:
+    # DynamoDB
+    dev:
+      DeletionProtectionEnabled: false
+    prod:
+      DeletionProtectionEnabled: true
+
 
 Resources:
-
   ApiGatewayApi:
+  # This creates the rest API and sets the name of the stage to the Environment Type
     Type: AWS::Serverless::Api
     Properties:
-      StageName: prod
-
-  ApiFunction: # Adds a GET method at the root resource via an Api event
+      StageName: !Ref EnvironmentType
+  
+  # Adds a GET method at the root resource via an Api event
+  ApiFunction: 
     Type: AWS::Serverless::Function
     Properties:
       Events:
@@ -29,12 +54,14 @@ Resources:
             Path: /
             Method: ANY
             RestApiId: !Ref ApiGatewayApi
+
         RootProxy:
           Type: Api
           Properties:
             Path: /{proxy+}
             Method: ANY
             RestApiId: !Ref ApiGatewayApi
+
       Role: !GetAtt ListTrackerIAMExecutionRole.Arn
       Runtime: python3.10
       Handler: index.handler
@@ -46,12 +73,10 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       RetentionInDays: 1
-      LogGroupName: !Sub "${AWS::StackName}-ApiRoot-${BranchName}"
       
   ListTrackerIAMExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub "ListTrackerIAMExecutionRole-${BranchName}"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -62,7 +87,7 @@ Resources:
              - apigateway.amazonaws.com
           Action: 'sts:AssumeRole'
       Policies:
-      - PolicyName: ListTrackerDynamoDBAccessPolicy
+      - PolicyName: anything
         PolicyDocument:
           Version: "2012-10-17"
           Statement:
@@ -72,6 +97,91 @@ Resources:
               Resource: '*'
             - Effect: Allow
               Action: '*'
-              Resource: 
-                - !GetAtt ApiRootLogs.Arn
-                - !Sub "${ApiRootLogs.Arn}/*"
+
+              Resource:
+                - Fn::GetAtt:
+                  - ListTrackerDynamoDBTable
+                  - Arn
+                - Fn::Sub: ${ListTrackerDynamoDBTable.Arn}/*
+
+# SQS
+
+
+  ListTrackQueue: 
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: ListTrackQueue
+
+  AlarmTopic: 
+    Type: AWS::SNS::Topic
+    Properties: 
+      Subscription: 
+        - 
+          Endpoint: 
+            Ref: "AlarmEmail"
+          Protocol: "email"
+
+  QueueDepthAlarm: 
+    Type: AWS::CloudWatch::Alarm
+    Condition: IsDev
+    Properties: 
+      AlarmDescription: "Alarm if queue depth increases to more than 10 messages"
+      Namespace: "AWS/SQS"
+      MetricName: "ApproximateNumberOfMessagesVisible"
+      Dimensions: 
+        - Name: "QueueName"
+          Value: !Ref ListTrackQueue
+      # The below actions represent actions that should be taken when the alarm state changes.
+      AlarmActions:
+           - !Ref AlarmTopic
+      OKActions:
+           - !Ref AlarmTopic
+      InsufficientDataActions:
+           - !Ref AlarmTopic
+      Statistic: "Sum"
+      Period: "300"
+      EvaluationPeriods: "1"
+      Threshold: "10"
+      ComparisonOperator: "GreaterThanThreshold"
+
+  ListTrackerDynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      DeletionProtectionEnabled: !FindInMap [ EnvConfig, !Ref EnvironmentType, DeletionProtectionEnabled]
+      TableName: !Sub "${AWS::StackName}-lists"
+      AttributeDefinitions:
+        - 
+          AttributeName: "user_id"
+          AttributeType: "S"
+        -
+          AttributeName: "list_id"
+          AttributeType: "S"
+      KeySchema:
+        - 
+          AttributeName: "user_id"
+          KeyType: "HASH"   # Partition Key
+        - 
+          AttributeName: "list_id"
+          KeyType: "RANGE"   # Sort Key
+
+      ProvisionedThroughput: 
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      
+      Tags:
+        - Key: name
+          Value: dyanmodbtable 
+
+
+Outputs: 
+  QueueURL: 
+    Description: "URL of new Amazon SQS Queue"
+    Value: !Ref ListTrackQueue
+
+  QueueARN: 
+    Description: "ARN of new AmazonSQS Queue"
+    Value: !GetAtt ListTrackQueue.Arn
+
+  QueueName: 
+    Description: "Name of new Amazon SQS Queue"
+    Value: !GetAtt ListTrackQueue.QueueName
